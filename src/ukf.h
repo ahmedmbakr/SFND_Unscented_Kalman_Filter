@@ -35,6 +35,8 @@ class UKF {
    */
   void UpdateLidar(MeasurementPackage meas_package);
 
+  bool isReasonableNewX(const Eigen::VectorXd & newX);
+
   /**
    * Updates the state and the state covariance matrix using a radar measurement
    * @param meas_package The measurement at k+1
@@ -95,6 +97,9 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+  // previous time stamp
+  long previous_timestamp_;
 };
 
 #endif  // UKF_H
