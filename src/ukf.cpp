@@ -13,24 +13,27 @@ UKF::UKF() {
   {
     return;
   }
-  std::cout <<"Enter UKF constructor\n";
+  
+  this->n_x_ = 5;
+
+  this->n_aug_ = 7;
   // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = false;
+  use_laser_ = true;
 
   // if this is false, radar measurements will be ignored (except during init)
-  use_radar_ = false;
+  use_radar_ = true;
 
   // initial state vector
-  x_ = VectorXd(5);
+  x_ = VectorXd(this->n_x_);
 
   // initial covariance matrix
-  P_ = MatrixXd(5, 5);
+  P_ = MatrixXd(this->n_x_, this->n_x_);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 1;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 0.5;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -76,7 +79,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	/*****************************************************************************
 	*  Initialization
 	****************************************************************************/
-	if (!is_initialized_) {
+	if (!this->is_initialized_) {
+      
 		// first measurement
 		this->x_ << 1, 1, 1, 1, 1;//Random init values for state vector.
 
