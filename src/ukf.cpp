@@ -79,12 +79,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	/*****************************************************************************
 	*  Initialization
 	****************************************************************************/
-	if (!this->is_initialized_) {
-      
-		// first measurement
-		this->x_ << 1, 1, 1, 1, 1;//Random init values for state vector.
-
-		float x_reading = 1, y_reading = 1;
+	if (!this->is_initialized_) {		
+		float x_reading = 1, y_reading = 1, velExpected = 0;
 		if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
 			/**
 			Convert radar from polar to cartesian coordinates and initialize state.
@@ -94,6 +90,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 			float ro_dot = meas_package.raw_measurements_(2);
 			x_reading = ro * cos(theta);
 			y_reading = ro * sin(theta);
+			double vx = ro_dot * cos(theta);
+			double vy = ro_dot * sin(theta);
+			velExpected = sqrt(vx * vx + vy * vy);
 		}
 		else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
 			/**
@@ -102,14 +101,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 			x_reading = meas_package.raw_measurements_(0);
 			y_reading = meas_package.raw_measurements_(1);
 		}
-		this->x_(0) = x_reading;
-		this->x_(1) = y_reading;
+		this->x_ << x_reading, y_reading, velExpected, 0, 0;//Random init values for state vector.
 
 		P_ << 1, 0, 0, 0, 0,
 			0, 1, 0, 0, 0,
 			0, 0, 1, 0, 0,
-			0, 0, 0, 1, 0,
-			0, 0, 0, 0, 1;
+			0, 0, 0, 100, 0,
+			0, 0, 0, 0, 100;
 		this->previous_timestamp_ = meas_package.timestamp_;
 
 		// done initializing, no need to predict or update
@@ -143,11 +141,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	* Update the state and covariance matrices.
 	*/
 
-	if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+	if (meas_package.sensor_type_ == MeasurementPackage::RADAR && this->use_radar_) {
 		// Radar updates
 		this->UpdateRadar(meas_package);
 	}
-	else {
+	else if (meas_package.sensor_type_ == MeasurementPackage::LASER && this->use_laser_){
 		// Laser updates
 		this->UpdateLidar(meas_package);
 	}
@@ -317,8 +315,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 	//measurement covariance matrix - laser
 	//This matrix must be given by the manufacturer
 	MatrixXd R_laser_ = MatrixXd(2, 2);
-	R_laser_ << std_laspx_, 0,
-				0, std_laspx_;
+	R_laser_ << std_laspx_ * std_laspx_, 0,
+				0, std_laspx_ * std_laspx_;
 
 	VectorXd z = meas_package.raw_measurements_;
 	VectorXd z_pred = H_laser_ * x_;
